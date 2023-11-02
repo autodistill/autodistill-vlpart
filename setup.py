@@ -22,7 +22,8 @@ setuptools.setup(
     install_requires=[
         "autodistill",
         "supervision",
-        "torch"
+        "torch",
+        "numpy"
     ],
     packages=find_packages(exclude=("tests",)),
     extras_require={

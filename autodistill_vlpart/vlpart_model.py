@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import supervision as sv
 import torch
+import numpy as np
 from autodistill.detection import CaptionOntology, DetectionBaseModel
 
 HOME = os.path.expanduser("~")
@@ -150,11 +151,19 @@ class VLPart(DetectionBaseModel):
         self.class_names = lvis_thing_classes
 
     def predict(self, input: str, confidence: int = 0.5) -> sv.Detections:
+        # change to dir of this file
+        os.chdir(os.path.dirname(os.path.realpath(__file__)))
+        
         img = read_image(input, format="BGR")
 
         predictions, _ = self.demo.run_on_image(img)
 
+        # filter predictions not in ontology
+        
+        selected_classes = [self.class_names.index(class_name) for class_name in self.ontology.prompts()]
+
         predictions = sv.Detections.from_detectron2(predictions)
         predictions = predictions[predictions.confidence > confidence]
+        predictions = predictions[np.isin(predictions.class_id, selected_classes)]
 
         return predictions, self.class_names
