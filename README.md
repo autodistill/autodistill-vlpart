@@ -32,6 +32,7 @@ pip3 install autodistill-vlpart
 ```python
 from autodistill_vlpart import VLPart
 from autodistill.detection import CaptionOntology
+from autodistill.utils import plot
 
 # define an ontology to map class names to our VLPart prompt
 # the ontology dictionary has the format {caption: class}
@@ -41,8 +42,7 @@ from autodistill.detection import CaptionOntology
 base_model = VLPart(
     ontology=CaptionOntology(
         {
-            "person": "person",
-            "a forklift": "forklift"
+            "person": "person"
         }
     )
 )
@@ -50,6 +50,12 @@ base_model = VLPart(
 predictions = base_model.predict("./image.png")
 
 print(predictions)
+
+plot(
+    image=cv2.imread("./image.png"),
+    classes=base_model.class_names,
+    detections=predictions
+)
 
 # label the images in the context_images folder
 base_model.label("./context_images", extension=".jpeg")

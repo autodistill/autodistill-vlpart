@@ -2,12 +2,15 @@ import os
 import subprocess
 from dataclasses import dataclass
 
+import numpy as np
 import supervision as sv
 import torch
-import numpy as np
+
 from autodistill.detection import CaptionOntology, DetectionBaseModel
+from autodistill.helpers import load_image
 
 HOME = os.path.expanduser("~")
+START_DIR = os.getcwd()
 
 
 def check_dependencies():
@@ -82,7 +85,7 @@ from .predictor import VisualizationDemo
 sys.path.append(os.path.join(HOME, ".cache/autodistill/VLPart/VLPart"))
 
 from detectron2.config import get_cfg
-from detectron2.data.detection_utils import read_image
+from detectron2.data.detection_utils import _apply_exif_orientation
 from detectron2.engine import default_argument_parser
 from vlpart.config import add_vlpart_config
 
@@ -151,19 +154,28 @@ class VLPart(DetectionBaseModel):
         self.class_names = lvis_thing_classes
 
     def predict(self, input: str, confidence: int = 0.5) -> sv.Detections:
-        # change to dir of this file
-        os.chdir(os.path.dirname(os.path.realpath(__file__)))
-        
-        img = read_image(input, format="BGR")
+        os.chdir(START_DIR)
 
-        predictions, _ = self.demo.run_on_image(img)
+        img = load_image(input, return_format="PIL")
+
+        image = _apply_exif_orientation(img)
+
+        image = image.convert("RGB")
+
+        predictions, _ = self.demo.run_on_image(np.array(image))
 
         # filter predictions not in ontology
-        
-        selected_classes = [self.class_names.index(class_name) for class_name in self.ontology.prompts()]
+
+        selected_classes = [
+            self.class_names.index(class_name) for class_name in self.ontology.prompts()
+        ]
+
+        print(selected_classes)
 
         predictions = sv.Detections.from_detectron2(predictions)
-        predictions = predictions[predictions.confidence > confidence]
-        predictions = predictions[np.isin(predictions.class_id, selected_classes)]
 
-        return predictions, self.class_names
+        print(predictions)
+        predictions = predictions[predictions.confidence > confidence]
+        # predictions = predictions[np.isin(predictions.class_id, selected_classes)]
+
+        return predictions
